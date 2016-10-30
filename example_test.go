@@ -10,24 +10,25 @@ import (
 )
 
 func Example() {
-	pkg, err := srcutil.Import("github.com/cstockton/go-srcutil")
+	pkg, err := srcutil.Import("io")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("String:", pkg)
-	fmt.Println("Synopsis:", pkg.Doc)
+	fmt.Printf("// %s: %s\n", pkg, pkg.Doc)
 
 	vars := pkg.Vars()
 	for _, v := range vars {
-		fmt.Printf("Var: %v %v\n", v.Name(), v.Type())
+		fmt.Printf("var %v %v\n", v.Name(), v.Type())
 	}
 
 	// Output:
-	// String: srcutil.Package{srcutil}
-	// Synopsis: Package srcutil provides utilities for working with Go source code.
-	// Var: DefaultContext *srcutil.Context
-	// Var: DefaultImportMode go/build.ImportMode
-	// Var: DefaultParseMode go/parser.Mode
+	// // io: Package io provides basic interfaces to I/O primitives.
+	// var EOF error
+	// var ErrClosedPipe error
+	// var ErrNoProgress error
+	// var ErrShortBuffer error
+	// var ErrShortWrite error
+	// var ErrUnexpectedEOF error
 }
 
 func ExamplePackage_Docs() {

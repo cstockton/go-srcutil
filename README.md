@@ -10,10 +10,25 @@
   > Example:
   > ```Go
   > pkg, err := srcutil.Import("io")
-  > pkg.Doc
-  > > Package io provides basic interfaces to I/O primitives.
+  > if err != nil {	log.Fatal(err) }
+  > fmt.Printf("// %s: %s\n", pkg, pkg.Doc)
+  >
+  > vars := pkg.Vars()
+  > for _, v := range vars {
+  >   fmt.Printf("var %v %v\n", v.Name(), v.Type())
+  > }
   > ```
-
+  >
+  > Output
+  > ```Go
+  > // io: Package io provides basic interfaces to I/O primitives.
+  > var EOF error
+  > var ErrClosedPipe error
+  > var ErrNoProgress error
+  > var ErrShortBuffer error
+  > var ErrShortWrite error
+  > var ErrUnexpectedEOF error
+  > ```
 
 ## About
 

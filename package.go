@@ -53,7 +53,7 @@ func (p *Package) Synopsis() string {
 // String implements fmt.Stringer.
 func (p *Package) String() string {
 	p.init()
-	return fmt.Sprintf("srcutil.Package{%s}", p.Name)
+	return fmt.Sprintf("%s", p.Name)
 }
 
 // ToAst provides access to an associated pair of *token.FileSet and
