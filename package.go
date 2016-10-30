@@ -202,29 +202,69 @@ func (d *Docs) Funcs() []doc.Func {
 	return out
 }
 
-// Function groups a types.Func and types.Signature, it will never be part of a
+// Var represents a packages top level named variable.
+type Var struct {
+	*types.Var
+	Named *types.Named
+}
+
+// NewVar returns a Var, typeVar must not be nil.
+func NewVar(typeVar *types.Var, typeNamed *types.Named) Var {
+	return Var{Var: typeVar, Named: typeNamed}
+}
+
+// Vars returns all the packages named variables from the packages outer
+// most scope.
+func (p *Package) Vars() []Var {
+	p.init()
+	var vars []Var
+	scope := p.tc.typesPkg.Scope()
+	for _, name := range scope.Names() {
+		obj := scope.Lookup(name)
+		if !obj.Exported() || isTest(name, "Test") || isTest(name, "Example") {
+			continue
+		}
+		asVar, ok := obj.(*types.Var)
+		if !ok {
+			continue
+		}
+		var indir types.Type
+		indir, ok = obj.Type().(*types.Pointer)
+		if ok {
+			indir = indir.(*types.Pointer).Elem()
+		}
+		asNamed, ok := indir.(*types.Named)
+		if !ok {
+			asNamed, _ = asVar.Type().(*types.Named)
+		}
+		vars = append(vars, NewVar(asVar, asNamed))
+	}
+	return vars
+}
+
+// Func groups a types.Func and types.Signature, it will never be part of a
 // method so Recv() will always be nul.
-type Function struct {
+type Func struct {
 	*types.Func
 	*types.Signature
 }
 
 // String implements fmt.Stringer.
-func (f Function) String() string {
+func (f Func) String() string {
 	return f.Func.String()
 }
 
-// NewFunction returns a Function, typeFunc must not be nil.
-func NewFunction(typeFunc *types.Func) Function {
+// NewFunc returns a Function, typeFunc must not be nil.
+func NewFunc(typeFunc *types.Func) Func {
 	// funcs always have signatures
-	return Function{typeFunc, typeFunc.Type().(*types.Signature)}
+	return Func{typeFunc, typeFunc.Type().(*types.Signature)}
 }
 
-// Functions returns all the packages named functions from the packages outer
+// Funcs returns all the packages named functions from the packages outer
 // most scope.
-func (p *Package) Functions() []Function {
+func (p *Package) Funcs() []Func {
 	p.init()
-	var funcs []Function
+	var funcs []Func
 	scope := p.tc.typesPkg.Scope()
 	for _, name := range scope.Names() {
 		obj := scope.Lookup(name)
@@ -235,22 +275,16 @@ func (p *Package) Functions() []Function {
 		if !ok {
 			continue
 		}
-		funcs = append(funcs, NewFunction(asFunc))
+		funcs = append(funcs, NewFunc(asFunc))
 	}
 	return funcs
-}
-
-// Var groups a types.Func and types.Signature.
-type Var struct {
-	*types.Func
-	*types.Signature
 }
 
 // MethodSet represents a set of methods belonging to a named type.
 type MethodSet struct {
 	Name    string
 	Obj     types.Object
-	Methods map[string]Function
+	Methods map[string]Func
 }
 
 // NewMethodSet returns a initialized MethodSet.
@@ -258,7 +292,7 @@ func NewMethodSet(name string, obj types.Object) MethodSet {
 	return MethodSet{
 		Name:    name,
 		Obj:     obj,
-		Methods: make(map[string]Function),
+		Methods: make(map[string]Func),
 	}
 }
 
@@ -317,7 +351,7 @@ func (p *Package) MethodSet(name string) (MethodSet, error) {
 			if !ok {
 				continue // must be *Var field selection
 			}
-			ms.Methods[f.Name()] = NewFunction(f)
+			ms.Methods[f.Name()] = NewFunc(f)
 		}
 	}
 	return ms, nil

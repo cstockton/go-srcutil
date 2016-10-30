@@ -17,9 +17,17 @@ func Example() {
 	fmt.Println("String:", pkg)
 	fmt.Println("Synopsis:", pkg.Doc)
 
+	vars := pkg.Vars()
+	for _, v := range vars {
+		fmt.Printf("Var: %v %v\n", v.Name(), v.Type())
+	}
+
 	// Output:
 	// String: srcutil.Package{srcutil}
 	// Synopsis: Package srcutil provides utilities for working with Go source code.
+	// Var: DefaultContext *srcutil.Context
+	// Var: DefaultImportMode go/build.ImportMode
+	// Var: DefaultParseMode go/parser.Mode
 }
 
 func ExamplePackage_Docs() {
