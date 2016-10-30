@@ -1,6 +1,6 @@
 # Go Package: srcutil
 
-  [About](#about) | [Usage](#usage) | [Go Doc](https://godoc.org/github.com/cstockton/go-srcutil)
+  [About](#about) | [Go Doc](https://godoc.org/github.com/cstockton/go-srcutil)
 
   > Get:
   > ```bash
