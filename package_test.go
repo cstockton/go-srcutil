@@ -229,3 +229,30 @@ func TestMethods(t *testing.T) {
 		})
 	})
 }
+
+func TestStructs(t *testing.T) {
+	ctx := FromWorkDir()
+	pkg, err := ctx.Import(tPkg.ImportPath)
+	tmust(t, err)
+
+	t.Run("Structs", func(t *testing.T) {
+		structs := pkg.Structs()
+		teq(t, 2, len(structs))
+		var (
+			found bool
+			ps    Struct
+		)
+		for _, s := range structs {
+			if s.Named.String() == `tpkg.PublicStruct` {
+				ps, found = s, true
+			}
+		}
+		if !found {
+			t.Fatal(`did not find struct tpkg.PublicStruct`)
+		}
+		exp := `tagOne:"structtag1" tagTwo:"structtag2"`
+		if tag := ps.Tag(0); tag != exp {
+			t.Fatalf(`exp %v; got %v`, exp, tag)
+		}
+	})
+}

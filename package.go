@@ -33,7 +33,14 @@ type Package struct {
 
 // Import is shorthand for FromWorkDir().Import("pkgname").
 func Import(pkgName string) (*Package, error) {
-	return FromWorkDir().Import(pkgName)
+	pkg, err := FromWorkDir().Import(pkgName)
+	if err != nil {
+		return nil, err
+	}
+	if err = pkg.init(); err != nil {
+		return nil, err
+	}
+	return pkg, nil
 }
 
 type toolchain struct {
@@ -213,8 +220,7 @@ func NewVar(typeVar *types.Var, typeNamed *types.Named) Var {
 	return Var{Var: typeVar, Named: typeNamed}
 }
 
-// Vars returns all the packages named variables from the packages outer
-// most scope.
+// Vars returns all the packages named variables from the package scope.
 func (p *Package) Vars() []Var {
 	p.init()
 	var vars []Var
@@ -240,6 +246,44 @@ func (p *Package) Vars() []Var {
 		vars = append(vars, NewVar(asVar, asNamed))
 	}
 	return vars
+}
+
+// Struct represents a named struct.
+type Struct struct {
+	*types.Struct
+	Named *types.Named
+}
+
+// NewStruct returns a Struct, typeStruct must not be nil.
+func NewStruct(typeStruct *types.Struct, typeNamed *types.Named) Struct {
+	return Struct{Struct: typeStruct, Named: typeNamed}
+}
+
+// Structs returns all the packages named structs from the package scope.
+func (p *Package) Structs() []Struct {
+	p.init()
+	var structs []Struct
+	scope := p.tc.typesPkg.Scope()
+	for _, name := range scope.Names() {
+		obj := scope.Lookup(name)
+		if !obj.Exported() || isTest(name, "Test") || isTest(name, "Example") {
+			continue
+		}
+		asTypeName, ok := obj.(*types.TypeName)
+		if !ok {
+			continue
+		}
+		asNamed, ok := asTypeName.Type().(*types.Named)
+		if !ok {
+			continue
+		}
+		asStruct, ok := asNamed.Underlying().(*types.Struct)
+		if !ok {
+			continue
+		}
+		structs = append(structs, NewStruct(asStruct, asNamed))
+	}
+	return structs
 }
 
 // Func groups a types.Func and types.Signature, it will never be part of a
@@ -317,7 +361,6 @@ func (p *Package) Methods() map[string]MethodSet {
 	p.init()
 	methods := make(map[string]MethodSet)
 	scope := p.tc.typesPkg.Scope()
-
 	for _, name := range scope.Names() {
 		methodSet, err := p.MethodSet(name)
 		if err != nil {
@@ -372,7 +415,7 @@ func (p *Package) toToolchain(typesInfo *types.Info) (*toolchain, error) {
 	fileSet := token.NewFileSet()
 	pkgs, err := parser.ParseDir(fileSet, p.Dir, nil, DefaultParseMode)
 	if err != nil {
-		return tc, err
+		return nil, err
 	}
 
 	// @TODO I'm not sure the best way to Copy() an ast. There may be a utility
@@ -381,7 +424,7 @@ func (p *Package) toToolchain(typesInfo *types.Info) (*toolchain, error) {
 	docFileSet := token.NewFileSet()
 	docPkgs, err := parser.ParseDir(docFileSet, p.Dir, nil, DefaultParseMode)
 	if err != nil {
-		return tc, err
+		return nil, err
 	}
 
 	astPkg, okAst := pkgs[p.Name]
@@ -395,7 +438,7 @@ func (p *Package) toToolchain(typesInfo *types.Info) (*toolchain, error) {
 	conf := types.Config{Importer: importer.Default()}
 	typesPkg, err := conf.Check(p.Name, fileSet, astFiles, typesInfo)
 	if err != nil {
-		return tc, err
+		return nil, err
 	}
 
 	tc.fileSet, tc.astPkg, tc.docPkg, tc.typesPkg, tc.typesInfo =

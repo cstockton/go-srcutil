@@ -56,7 +56,7 @@ var (
 // PublicStruct proin libero arcu, rerum orci tincidunt, lacus tempor sapien
 // platea ullamcorper. Nullam velit, ipsum erat varius nam diam arcu vestibulum.
 type PublicStruct struct {
-	Name   string
+	Name   string `tagOne:"structtag1" tagTwo:"structtag2"`
 	Number int
 }
 
